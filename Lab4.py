@@ -9,7 +9,20 @@ Created on Thu Oct 19 10:22:47 2023
 import numpy as np
 import matplotlib.pyplot as plt
 
-def heat_solve(xmax=1.0, dx=0.2, tmax=0.2, dt=0.02, c2=1.0, init=0):
+solution = np.array([[0., 0., 0., 0., 0., 0.,
+        0., 0.       , 0.       , 0.       , 0.       ],
+       [0.64     , 0.48     , 0.4      , 0.32     , 0.26     , 0.21     ,
+        0.17     , 0.1375   , 0.11125  , 0.09     , 0.0728125],
+       [0.96     , 0.8      , 0.64     , 0.52     , 0.42     , 0.34     ,
+        0.275    , 0.2225   , 0.18     , 0.145625 , 0.1178125],
+       [0.96     , 0.8      , 0.64     , 0.52     , 0.42     , 0.34     ,
+        0.275    , 0.2225   , 0.18     , 0.145625 , 0.1178125],
+       [0.64     , 0.48     , 0.4      , 0.32     , 0.26     , 0.21     ,
+        0.17     , 0.1375   , 0.11125  , 0.09     , 0.0728125],
+       [0.       , 0.       , 0.       , 0.       , 0.       , 0.       ,
+        0., 0.       , 0.       , 0.       , 0.       ]])
+
+def heat_solve(xmax=1.0, dx=0.2, tmax=0.2, dt=0.02, c2=1.0):
     '''
     
 
@@ -41,7 +54,7 @@ def heat_solve(xmax=1.0, dx=0.2, tmax=0.2, dt=0.02, c2=1.0, init=0):
     '''
     
     # Set constants
-    r = c2 * (dt/dx)**2
+    r = c2 * dt/dx**2
     
     # Create space and time grids
     x = np.arange(0, xmax+dx, dx)
@@ -56,10 +69,12 @@ def heat_solve(xmax=1.0, dx=0.2, tmax=0.2, dt=0.02, c2=1.0, init=0):
     # Set initial and boundary conditions
     temp[0,:] = 0
     temp[-1,:] = 0
-    temp[:,0] = 4 * x - 4 * (x)**2
+    temp[:,0] = 4 * x - 4*(x)**2
     
     # Solve!
     for j in range(0, N-1):
         for i in range(1, M-1):
             temp[i, j+1] = (1-2*r)*temp[i, j] + \
                 r*(temp[i+1,j] + temp[i-1,j])
+                
+    return x, t, temp
