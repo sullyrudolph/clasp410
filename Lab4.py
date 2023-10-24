@@ -22,7 +22,11 @@ solution = np.array([[0., 0., 0., 0., 0., 0.,
        [0.       , 0.       , 0.       , 0.       , 0.       , 0.       ,
         0., 0.       , 0.       , 0.       , 0.       ]])
 
-def heat_solve(xmax=1.0, dx=0.2, tmax=0.2, dt=0.02, c2=1.0):
+def sample_init(x):
+    '''Simple boundary condition function'''
+    return 4*x - 4*x**2
+
+def heat_solve(xmax=1.0, dx=0.2, tmax=0.2, dt=0.02, c2=1.0, init=0):
     '''
     
 
@@ -71,10 +75,15 @@ def heat_solve(xmax=1.0, dx=0.2, tmax=0.2, dt=0.02, c2=1.0):
     temp[-1,:] = 0
     temp[:,0] = 4 * x - 4*(x)**2
     
+    # Set initial condition
+    if callable(init):
+        temp[:, 0] = init(x)
+    else:
+        temp[:, 0] = init
+    
     # Solve!
     for j in range(0, N-1):
-        for i in range(1, M-1):
-            temp[i, j+1] = (1-2*r)*temp[i, j] + \
-                r*(temp[i+1,j] + temp[i-1,j])
+        temp[1:-1, j+1] = (1-2*r)*temp[1:-1, j] + \
+            r*(temp[2:,j] + temp[:-2,j])
                 
     return x, t, temp
