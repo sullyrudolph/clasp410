@@ -27,6 +27,7 @@ import numpy as np
 import warnings
 import matplotlib.pyplot as plt
 
+# Solution to test for code validity. References specifically to question 1
 solution = np.array([[0., 0., 0., 0., 0., 0.,
         0., 0.       , 0.       , 0.       , 0.       ],
        [0.64     , 0.48     , 0.4      , 0.32     , 0.26     , 0.21     ,
@@ -40,9 +41,10 @@ solution = np.array([[0., 0., 0., 0., 0., 0.,
        [0.       , 0.       , 0.       , 0.       , 0.       , 0.       ,
         0., 0.       , 0.       , 0.       , 0.       ]])
 
-
 def sample_init(x):
-    '''Simple boundary condition function'''
+    '''Simple boundary condition function. Used for setting the initial
+    temperature profile across the vertical column of space in Q1.
+    '''
     return 4*x - 4*x**2
 
 
@@ -53,8 +55,7 @@ def temp_kanger(t):
 
     Parameters
     ----------
-    t : TYPE
-        DESCRIPTION.
+    t : float (unit --> days)
 
     Returns
     -------
@@ -69,30 +70,36 @@ def temp_kanger(t):
      
     t_amp = (t_kanger - t_kanger.mean()).max()
    
-    return t_amp*np.sin(np.pi/180 * t - np.pi/2) + t_kanger.mean()
+    return t_amp*np.sin(np.pi/180 * t - np.pi/2) + t_kanger.mean() + 3
 
 
-def heat_solve(xmax=100.0, dx=1, tmax=86400*365*50, dt=86400, c2=2.5e-7, init=0, 
-               kanger=temp_kanger):
+def heat_solve(xmax=100.0, dx=1, tmax=86400*365*80, dt=86400, c2=2.5e-7, init=0, 
+               kanger=temp_kanger, debug=False):
     '''
     
 
     Parameters
     ----------
-    xmax : float
+    xmax : float, (units --> meters)
          Defines the total length of the one-dimensional space for
         which the forward difference solver is iterated over.
-    dx : float
+    dx : float (units --> meters)
         The spatial step, must be divisible into xmax.
-    tmax : float
+    tmax : float (units --> seconds)
         Defines the total time that the forward difference solver is iterated.
-    dt : float
+    dt : float (units --> seconds)
         The time step, must be divisible into tmax.
-    c2 : float
+    c2 : float (units --> meters squared per second)
         Thermal diffusivity constant, representative of "c squared."
     init : 0 or callable function
         Used to define the initial condition of the temperature profile across
         the one-dimensional space.
+    kanger: callable function
+        Used to import the temp_kanger function and apply it to the upper
+        boundary condition
+    debug : boolean, defaults to False
+        If True, print out debug information.
+        
     Returns
     -------
     x: numpy vector
@@ -102,7 +109,7 @@ def heat_solve(xmax=100.0, dx=1, tmax=86400*365*50, dt=86400, c2=2.5e-7, init=0,
     temp: 2-dimensional numpy array
         Temperature as a function of time and space
     dt: float
-        Pass through of "dt" as a means to be used later outside of this
+        Pass through of "dt" as a means to use its value later outside of this
         function
 
     '''
@@ -139,6 +146,13 @@ def heat_solve(xmax=100.0, dx=1, tmax=86400*365*50, dt=86400, c2=2.5e-7, init=0,
     # temp[0,:] = 0
     # temp[-1,:] = 0     
     
+    # Debug time:
+    if debug:
+        print(f"Size of grid is {M} in space, {N} in time")
+        print(f"Diffusion coeff = {c2}")
+        print(f"Space grid goes from {x[0]} to {x[-1]}")
+        print(f"Time grid goes from {t[0]} to {t[-1]}")
+    
     # Set initial condition
     if callable(init):
         temp[:, 0] = init(x)
@@ -147,7 +161,9 @@ def heat_solve(xmax=100.0, dx=1, tmax=86400*365*50, dt=86400, c2=2.5e-7, init=0,
         
     # Set boundary conditions (Dirichlet - Question 2&3)
     if callable(kanger):    
-        temp[0,:] = kanger(t)
+            # Since kanger_temp accepts t in units of days, here t is converted
+            # from seconds to days
+        temp[0,:] = kanger(t/(24*3600.))
         
     else:
         temp[0,:] = 0
@@ -165,54 +181,76 @@ def heat_solve(xmax=100.0, dx=1, tmax=86400*365*50, dt=86400, c2=2.5e-7, init=0,
     return x, t, temp, dtPass
 
 
-# Get solution from solver
-x, t, temp, dt = heat_solve()
+def plot_func():
+    '''
+    A function withholding code which makes two separate plots
+        - Plot One: Temperature diffusion of a one dimensional space as time
+                    passes
+        - Plot Two: Temperature profile of the vertical column. The coldest
+                    each point reaches is represented by "Winter" and the
+                    warmest each point reaches is represented by "Summer"
+                    
+    Inputs
+    -------
+    heat_solve: function
+        Provides the output of the forward difference solver
 
-# Create a figure/axes object
-fig, axes = plt.subplots(1, 1)
-axes.invert_yaxis()
+    Returns
+    -------
+    None, fr (for real)
 
-# Create a color map and add a color bar
-
-# For our plot, time (t) is on the horizontal axis and space (x) is plotted
-# on the vertical axis. Temperature is plotted via a color gradient.
-map = axes.pcolor(t, x, temp, cmap='seismic', vmin=-25, vmax=25)
-plt.colorbar(map, ax=axes, label='Temperature ($C$)')
-
-
-axes.set_title("Heat Diffusion through Permafrost in Kangerlussuaq, Greenland")
-axes.set_xlabel("Time (Seconds)")
-axes.set_ylabel("Depth (m)")
-
-
-# Display the plot and simultaneously save as file
-file_counter = 0
-file_counter += 1
-file_name = f'lab4_figure_{file_counter:03}.png'
-plt.savefig(file_name)
-plt.show()
-
-
-# Set indexing for final year of results
-loc = int(-365/dt)
-
-# Extract min and max values over final year
-winter = temp[:,loc:].min(axis=1)
-summer = temp[:,loc:].max(axis=1)
-
-# Create a temperature profile plot
-fix, ax2 = plt.subplots(1, 1, figsize=(10,8))
-ax2.plot(winter,x,label='Winter')
-ax2.plot(summer,x,label='Summer', linestyle='--')
-ax2.set_title("Temperature Profile")
-ax2.set_xlabel("Time")
-ax2.set_ylabel("Space")
-plt.show()
-
-'''
-Q1 - How would I have an f-string set up to where each time the code is run,
-a new file is saved with the file name increasing in number
-    Ex: lab4_figure000, lab4_figure001, etc.
+    '''
     
-    - Create a function containing the two plot outputs to separate files
-'''
+    # Get solution from solver
+    x, t, temp, dt = heat_solve()
+    
+    ###########################################################
+    # Plot One #
+    
+    # Create a figure/axes object for the result of the forward-diff solver
+    fig, axes = plt.subplots(1, 1)
+    axes.invert_yaxis()
+    
+    # Create a color map and add a color bar
+            # One thing to note is (x), representative of space, is plotted
+            # on the vertical axis
+    map = axes.pcolor(((t/86400)/365), x, temp, cmap='seismic', vmin=-5, vmax=5)
+    plt.colorbar(map, ax=axes, label='Temperature (º$C$)')
+    
+    # Add plot labels, save plot as file, and display 
+    axes.set_title("Heat Diffusion through Permafrost in Kangerlussuaq, GL")
+    axes.set_xlabel("Time (Years)")
+    axes.set_ylabel("Depth (m)")
+    file_counter = 0
+    file_name = f'lab4_figure_{file_counter:03}.png'
+    plt.savefig(file_name)
+    plt.show()
+    
+    ###########################################################
+    # Plot Two #
+    
+    # Set indexing for final year of results
+    loc = int(-365/(dt/86400))
+    
+    # Extract min and max values over final year
+    winter = temp[:,loc:].min(axis=1)
+    summer = temp[:,loc:].max(axis=1)
+    
+    # Create a temperature profile plot
+    fix, ax2 = plt.subplots(1, 1, figsize=(10,8))
+    ax2.plot(winter,x,label='Winter')
+    ax2.plot(summer,x,label='Summer', linestyle='--')
+    ax2.invert_yaxis()
+    ax2.legend(loc='best')
+    ax2.set_title("Vertical Profile of the Final Year's Max and Min Temperatures")
+    ax2.set_xlabel("Temperature (ºC)")
+    ax2.set_ylabel("Depth of Vertical Column (m)")
+    file_counter = 4
+    file_name = f'lab4_figure_{file_counter:03}.png'
+    plt.savefig(file_name)
+    plt.show()
+
+plot_func()
+
+''' Notes of Stuff to Add
+        1) Dashed vertical line at 0ºC for Plot 2'''
