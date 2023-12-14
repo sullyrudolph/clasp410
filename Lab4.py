@@ -245,6 +245,7 @@ def plot_func():
     ax2.set_title("Vertical Profile of the Final Year's Max and Min Temperatures")
     ax2.set_xlabel("Temperature (ºC)")
     ax2.set_ylabel("Depth of Vertical Column (m)")
+    plt.axvline(x =0, linestyle = '--', color = 'k')
     file_counter = 4
     file_name = f'lab4_figure_{file_counter:03}.png'
     plt.savefig(file_name)
